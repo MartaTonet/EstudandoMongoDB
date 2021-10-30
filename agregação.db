@@ -1,0 +1,166 @@
+use("sample_mflix")
+
+db.movies.find().count()
+
+//comando para mostrar filmes lançados em determinado ano e país
+use("sample_mflix")
+db.movies.find(
+  {year:2015, countries: "Brazil"}
+)
+
+//comando para mostrar quantidade filmes lançados em um determinado 
+use("sample_mflix")
+db.movies.find(
+  {year:1996}
+).count()
+
+
+//mostrar filmes lançados em 2015 ou($Or) ou país
+use("sample_mflix")
+db.movies.find(
+  {
+    $or:
+    [
+    {year:2015},
+    {countries:"Venezuela"}
+
+    ]
+  }
+)
+  //mostrar filmes lançados em 2014 e 2015/ e o número do total desses dois anos
+use("sample_mflix")
+db.movies.find({
+  year:{
+    $in:[2014, 2015]
+  }
+})
+
+//mostrar filmes lançados entre 1990 e 2010 E que devem conter Angelina Jolie ou Fernanda Montenegro
+use("sample_mflix")
+db.movies.find({
+  year:{
+    $gte:1990,
+    $lte:2010
+  }
+
+}).count()
+
+//mostrar todos os filmes com os actores conter Angelina Jolie ou Fernanda Montenegro
+// usamos o $not faz a negação da procura de filmes dessas atrizes(mostrará o total dos filmes que elas não participaram)
+use("sample_mflix")
+db.movies.find({
+  cast:{
+    $not{
+    $in:["Angelina Jolie", "Fernanda Montenegro"]
+  }}
+}).count()
+
+//mostrar filmes entr 1990 e 2010
+use("sample_mflix")
+db.movies.find({
+    $and: [
+        { $or: [{year:{$gte: 1990}}, {year:{$lte: 2010}}] },
+        { $or: [{cast:{$eq: "Angelina Jolie"}}, {cast:{$eq: "Fernanda Montenegro"}}]}
+        
+    ]
+}).count()
+
+//mostrar filmes lançados em ano maior ou igual a 1990 ou maior ou = a 20210 que sejam das atrizes ngelina AJolie ou Fernanda Montenegro
+use("sample_mflix")
+db.movies.find({
+    $and: [
+        {
+            $or: [{ year: { $gte: 1990, $lte: 2010 } }],
+        }, {
+            $or: [{ cast: { $in: ['Fernanda Montenegro', 'Angelina Jolie'] } }],
+        }
+    ]
+}).sort({ year: 1 })
+
+
+        //USANDO AGREGAÇÃO (aggregate)
+
+// ver cada um filmes e mostrar o total de vitórias que teve
+use("sample_mflix")
+
+db.movies.aggregate([
+  {
+    $group:{
+      _id:"",
+      "premios":{$sum:"$awards.wins"}
+    }
+  },{
+    $project:{"Total de vitorias":"$premios"}
+  }
+  
+])
+
+//mostrar a média do total de vitórias
+use("sample_mflix")
+db.movies.aggregate([
+  {
+    $group:{
+      _id:"",
+      "premios":{$avg:"$awards.wins"}
+    }
+  },{
+    $project:{"Media de vitorias":"$premios"}
+  }
+  
+])
+
+// mostrar qual filme ganhou mais prémios em relação aos outros(usando o $max)
+use("sample_mflix")
+db.movies.aggregate([
+  {
+    $group:{
+      _id:"",
+      "premios":{$max:"$awards.wins"}
+    }
+  },{
+    $project:{"Filme com maior numero de vitorias":"$premios"}
+  }
+  
+])
+
+//mostrar o filme que ganhou 267 prémios(usar findOne)
+use("sample_mflix")
+db.movies.findOne({
+  "awards.wins": 267
+})
+
+  // mostrar total de  prémios que ganhou o filme TITANIC(usando $sum)
+  use("sample_mflix")
+db.movies.aggregate([
+  {$match:{
+    title:"Titanic"
+  }},
+  {
+    $group:{
+      _id:"",
+      "premios":{$sum:"$awards.wins"}
+    }
+  },{
+    $project:{"Mostrar o total de vitorias do filme Titanic":"$premios"}
+  }
+  
+])
+
+//  FAZENDO AGREGAÇÃO DE DUAS COLEÇÕES sample_mflix E sample_analytics
+
+//Retornar todas as transações de uma conta
+use("sample_analytics")
+
+db.accounts.aggregate({
+  $match:{account_id:371138}
+  
+},
+{
+  $lookup:{
+    from:"transactions",
+    localField:"account_id",
+    foreignField:"account_id",
+    as:"transacoes"
+  }
+}
+)
